@@ -4,6 +4,10 @@ from django.urls import reverse
 from rest_framework import status
 from django.utils import timezone
 from datetime import datetime, timedelta
+from unittest.mock import patch
+from medtrackerapp.services import DrugInfoService
+from django.test import TestCase
+
 
 class MedicationViewTests(APITestCase):
     def setUp(self):
@@ -239,3 +243,145 @@ class DoseLogViewTests(APITestCase):
         response = self.client.get(self.log_filter_url, params)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class DrugInfoServiceTests(APITestCase):
+
+    def setUp(self):
+        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        # This is the corrected URL path
+        self.info_url = f"/api/medications/{self.med.pk}/info/"
+
+    @patch('medtrackerapp.services.requests.get')
+    def test_drug_info_service_mocked(self, mock_requests_get):
+        """
+        Test the /api/medications/<id>/info/ endpoint.
+        This test mocks the external 'requests.get' call.
+        """
+
+        # --- 1. Setup the Mock ---
+        # This is the FAKE raw data we pretend the external API sends.
+        # It's designed to be processed by your DrugInfoService.
+        fake_api_response = {
+            "results": [
+                {
+                    "openfda": {
+                        "generic_name": ["Aspirin"],
+                        "manufacturer_name": ["Bayer"]
+                    },
+                    "warnings": ["Test warning"],
+                    "purpose": ["Test purpose"]
+                }
+            ]
+        }
+
+        # Configure the mock to return the fake data
+        mock_requests_get.return_value.status_code = 200
+        mock_requests_get.return_value.json.return_value = fake_api_response
+
+        # --- 2. Run the Test ---
+        # Call our API endpoint
+        response = self.client.get(self.info_url)
+
+        # --- 3. Check the Results ---
+        # Check that our view returned 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check that 'requests.get' was called by the service
+        mock_requests_get.assert_called_once()
+
+        # Check that the response.data IS the SIMPLE dictionary
+        # returned by DrugInfoService, not the raw JSON.
+        self.assertEqual(response.data['manufacturer'], "Bayer")
+        self.assertEqual(response.data['warnings'], ["Test warning"])
+        self.assertEqual(response.data['purpose'], ["Test purpose"])
+        self.assertEqual(response.data['name'], "Aspirin")
+
+    @patch('medtrackerapp.services.requests.get')
+    def test_drug_info_service_api_error(self, mock_requests_get):
+        """
+        Tests the /info/ endpoint when the external API fails (e.g., 404).
+        This should cover the error-handling path in the service.
+        """
+        # --- 1. Setup the Mock ---
+        # Pretend the external API returns a 404 Not Found
+        mock_requests_get.return_value.status_code = 404
+        mock_requests_get.return_value.json.return_value = {"error": "Not Found"}
+
+        # --- 2. Run the Test ---
+        response = self.client.get(self.info_url)
+
+        # --- 3. Check the Results ---
+        # Check that our view caught the service's error and returned a
+        # 502 Bad Gateway, as shown in your views.py
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    @patch('medtrackerapp.services.requests.get')
+    def test_drug_info_service_no_results(self, mock_requests_get):
+        """
+        Tests the /info/ endpoint when the external API finds no results.
+        This covers the 'No results found' error (line 69).
+        """
+        # --- 1. Setup the Mock ---
+        # Pretend the external API returns 200 OK, but an empty results list
+        fake_api_response = {
+            "results": []  # Empty results
+        }
+        mock_requests_get.return_value.status_code = 200
+        mock_requests_get.return_value.json.return_value = fake_api_response
+
+        # --- 2. Run the Test ---
+        response = self.client.get(self.info_url)
+
+        # --- 3. Check the Results ---
+        # Our view should catch this and return a 502 Bad Gateway
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class DirectServiceTests(TestCase):
+
+    def test_service_no_drug_name(self):
+        """
+        Tests the DrugInfoService directly to cover the
+        'drug_name is required' validation (line 58).
+        """
+        # Test with None
+        with self.assertRaisesRegex(ValueError, "drug_name is required"):
+            DrugInfoService.get_drug_info(drug_name=None)
+
+        # Test with an empty string
+        with self.assertRaisesRegex(ValueError, "drug_name is required"):
+            DrugInfoService.get_drug_info(drug_name="")
+
+    @patch('medtrackerapp.services.requests.get')
+    def test_drug_info_service_no_results(self, mock_requests_get):
+        """
+        Tests the /info/ endpoint when the external API finds no results.
+        This covers the 'No results found' error (line 69).
+        """
+        # --- 1. Setup the Mock ---
+        fake_api_response = {"results": []}  # Empty results
+        mock_requests_get.return_value.status_code = 200
+        mock_requests_get.return_value.json.return_value = fake_api_response
+
+        # --- 2. Run the Test ---
+        response = self.client.get(self.info_url)
+
+        # --- 3. Check the Results ---
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class DirectServiceTests(TestCase):
+
+    def test_service_no_drug_name(self):
+        """
+        Tests the DrugInfoService directly to cover the
+        'drug_name is required' validation (line 58).
+        """
+        # Test with None
+        with self.assertRaisesRegex(ValueError, "drug_name is required"):
+            DrugInfoService.get_drug_info(drug_name=None)
+
+        # Test with an empty string
+        with self.assertRaisesRegex(ValueError, "drug_name is required"):
+            DrugInfoService.get_drug_info(drug_name="")
