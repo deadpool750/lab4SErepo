@@ -49,7 +49,6 @@ class MedicationModelTests(TestCase):
             )
             med.full_clean()
 
-    # --- New Tests for Code Coverage ---
 
     def test_adherence_rate_no_logs(self):
         """
@@ -66,7 +65,6 @@ class MedicationModelTests(TestCase):
         DoseLog.objects.create(medication=self.med, taken_at=now - timedelta(days=1), was_taken=False)
         DoseLog.objects.create(medication=self.med, taken_at=now - timedelta(days=2), was_taken=True)
 
-        # 2 taken out of 3 total logs = 66.67%
         self.assertEqual(self.med.adherence_rate(), 66.67)
 
     def test_expected_doses_valid(self):
@@ -174,7 +172,6 @@ class TestDoseLog(TestCase):
             taken_at=log_time,
             was_taken=True
         )
-        # Note: The output format depends on your local timezone,
         # so we check for the components.
         expected_str = "Paracetamol at 2025-01-01 09:30 - Taken"
         self.assertEqual(str(log), expected_str)
