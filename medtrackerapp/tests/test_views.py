@@ -307,3 +307,38 @@ class DirectServiceTests(TestCase):
         # validating error for empty string
         with self.assertRaisesRegex(ValueError, "drug_name is required"):
             DrugInfoService.get_drug_info(drug_name="")
+
+
+class MedicationExpectedDosesTest(APITestCase):
+    def setUp(self):
+        # creating a sample medication for testing using your model's fields
+        self.medication = Medication.objects.create(
+            name="Test Med",
+            dosage_mg=10,
+            prescribed_per_day=2
+        )
+        self.url = reverse('medication-expected-doses', args=[self.medication.id])
+
+    def test_expected_doses_valid(self):
+        """Test legitimate request returns 200 and correct calculation"""
+        # request with ?days=10
+        response = self.client.get(self.url, {'days': 10})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['medication_id'], self.medication.id)
+        self.assertEqual(response.data['days'], 10)
+        self.assertIn('expected_doses', response.data)
+
+    def test_expected_doses_missing_param(self):
+        """Test missing 'days' parameter returns 400"""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_expected_doses_invalid_param(self):
+        """Test invalid 'days' (negative or string) returns 400"""
+        response = self.client.get(self.url, {'days': -5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Test non-numeric string
+        response = self.client.get(self.url, {'days': "invalid"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
