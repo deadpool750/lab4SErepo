@@ -51,6 +51,42 @@ class MedicationViewSet(viewsets.ModelViewSet):
             return Response(data, status=status.HTTP_502_BAD_GATEWAY)
         return Response(data)
 
+    @action(detail=True, methods=['get'], url_path='expected-doses')
+    def expected_doses(self, request, pk=None):
+        """
+        Calculate expected doses for a specific medication over a given number of days.
+        """
+        medication = self.get_object()
+        days_param = request.query_params.get('days')
+
+        # 1. Validate that the 'days' parameter exists
+        if days_param is None:
+            return Response(
+                {"error": "days parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 2. Validate that 'days' is a valid integer
+            days = int(days_param)
+
+            # 3. Call the model method (which validates positive numbers)
+            result = medication.expected_doses(days)
+
+        except (ValueError, TypeError):
+            # Catches non-integers (TypeError/ValueError) and negative numbers (ValueError from model)
+            return Response(
+                {"error": "days must be a positive integer"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. Return the successful response structure required by the lab
+        return Response({
+            "medication_id": medication.id,
+            "days": days,
+            "expected_doses": result
+        }, status=status.HTTP_200_OK)
+
 
 class DoseLogViewSet(viewsets.ModelViewSet):
     """

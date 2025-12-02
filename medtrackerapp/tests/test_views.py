@@ -338,7 +338,5 @@ class MedicationExpectedDosesTest(APITestCase):
         """Test invalid 'days' (negative or string) returns 400"""
         response = self.client.get(self.url, {'days': -5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        # Test non-numeric string
         response = self.client.get(self.url, {'days': "invalid"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
