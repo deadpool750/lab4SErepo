@@ -51,42 +51,45 @@ class MedicationViewSet(viewsets.ModelViewSet):
             return Response(data, status=status.HTTP_502_BAD_GATEWAY)
         return Response(data)
 
+    #cleaner commented function
     @action(detail=True, methods=['get'], url_path='expected-doses')
     def expected_doses(self, request, pk=None):
         """
-        Calculate expected doses for a specific medication over a given number of days.
+        Calculate the total number of doses required for a specific duration.
+
+        Query Parameters:
+            days (int): The number of days to calculate doses for. Must be positive.
+
+        Returns:
+            Response: JSON object containing medication_id, days, and expected_doses.
+            400 Bad Request: If 'days' is missing, not an integer, or non-positive.
         """
         medication = self.get_object()
         days_param = request.query_params.get('days')
 
-        # 1. Validate that the 'days' parameter exists
-        if days_param is None:
+        # Check for presence first
+        if not days_param:
             return Response(
-                {"error": "days parameter is required"},
+                {"error": "The 'days' query parameter is required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            # 2. Validate that 'days' is a valid integer
             days = int(days_param)
-
-            # 3. Call the model method (which validates positive numbers)
-            result = medication.expected_doses(days)
+            # The model method handles logic and raises ValueError for non-positive days
+            total_doses = medication.expected_doses(days)
 
         except (ValueError, TypeError):
-            # Catches non-integers (TypeError/ValueError) and negative numbers (ValueError from model)
             return Response(
-                {"error": "days must be a positive integer"},
+                {"error": "The 'days' parameter must be a positive integer."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 4. Return the successful response structure required by the lab
         return Response({
             "medication_id": medication.id,
             "days": days,
-            "expected_doses": result
+            "expected_doses": total_doses
         }, status=status.HTTP_200_OK)
-
 
 class DoseLogViewSet(viewsets.ModelViewSet):
     """
