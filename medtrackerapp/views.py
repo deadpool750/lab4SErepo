@@ -145,15 +145,29 @@ class DoseLogViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(logs, many=True)
         return Response(serializer.data)
 
+
 class NoteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing Doctor's Notes.
+
+    Provides standard CRUD operations but strictly forbids updates
+    to ensure the historical integrity of medical notes.
+    """
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
-    # Requirement: Updating an existing note should not be supported.
     def update(self, request, *args, **kwargs):
-        return Response({"error": "Updates not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        """Override to disable full updates (PUT)."""
+        return self._handle_update_attempt()
 
     def partial_update(self, request, *args, **kwargs):
-        return Response({"error": "Updates not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        """Override to disable partial updates (PATCH)."""
+        return self._handle_update_attempt()
 
+    def _handle_update_attempt(self):
+        """Helper method to return a standard 405 error for update attempts."""
+        return Response(
+            {"error": "Updates to doctor's notes are not supported."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
 
