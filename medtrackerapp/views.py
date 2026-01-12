@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.utils.dateparse import parse_date
 from .models import Medication, DoseLog, Note
 from .serializers import MedicationSerializer, DoseLogSerializer, NoteSerializer
+from rest_framework.filters import SearchFilter
 
 class MedicationViewSet(viewsets.ModelViewSet):
     """
@@ -51,7 +52,6 @@ class MedicationViewSet(viewsets.ModelViewSet):
             return Response(data, status=status.HTTP_502_BAD_GATEWAY)
         return Response(data)
 
-    #cleaner commented function
     @action(detail=True, methods=['get'], url_path='expected-doses')
     def expected_doses(self, request, pk=None):
         """
@@ -155,6 +155,9 @@ class NoteViewSet(viewsets.ModelViewSet):
     """
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
+
+    filter_backends = (SearchFilter,)
+    search_fields = ["medication__name"]
 
     def update(self, request, *args, **kwargs):
         """Override to disable full updates (PUT)."""
