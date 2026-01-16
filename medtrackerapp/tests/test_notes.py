@@ -15,8 +15,8 @@ class NoteTests(APITestCase):
         # will probably raise an error because url doesnt exist yet.
         try:
             self.list_url = reverse('note-list')
-        except:
-            self.list_url = '/api/notes/'
+        except Exception:
+            self.list_url = "/api/notes/"
 
     def test_create_note(self):
         """Test creating a new note for a medication"""

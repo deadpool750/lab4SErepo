@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from .models import Medication, DoseLog
 from .models import Medication, DoseLog, Note
 
 class MedicationSerializer(serializers.ModelSerializer):

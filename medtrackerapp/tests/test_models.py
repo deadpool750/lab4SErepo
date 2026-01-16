@@ -104,7 +104,6 @@ class MedicationModelTests(TestCase):
         """
         today = date.today()
         yesterday = today - timedelta(days=1)
-        tomorrow = today + timedelta(days=1)
 
         # Create logs: one in range, one out of range
         now = timezone.now()
