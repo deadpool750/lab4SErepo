@@ -139,7 +139,7 @@ class DoseLogViewTests(APITestCase):
         self.assertEqual(len(response.data), 1)
 
 
-class DoseLogViewTests(APITestCase):
+class DoseLogFilterViewTests(APITestCase):
     def setUp(self):
         # initializing medication for testing filter operations
         self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
@@ -296,17 +296,6 @@ class DirectServiceTests(TestCase):
         # expecting gateway error for empty results
         response = self.client.get(self.info_url)
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
-
-
-class DirectServiceTests(TestCase):
-
-    def test_service_no_drug_name(self):
-        # validating required drug_name on direct service usage
-        with self.assertRaisesRegex(ValueError, "drug_name is required"):
-            DrugInfoService.get_drug_info(drug_name=None)
-        # validating error for empty string
-        with self.assertRaisesRegex(ValueError, "drug_name is required"):
-            DrugInfoService.get_drug_info(drug_name="")
 
 
 class MedicationExpectedDosesTest(APITestCase):
