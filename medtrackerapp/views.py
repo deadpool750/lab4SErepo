@@ -148,7 +148,7 @@ class DoseLogViewSet(viewsets.ModelViewSet):
 
 class NoteViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for managing Doctor's Notes.
+    API endpoint for managing Doctor's Notes .
 
     Provides standard CRUD operations but strictly forbids updates
     to ensure the historical integrity of medical notes.
