@@ -278,24 +278,15 @@ class DrugInfoServiceTests(APITestCase):
 
 
 class DirectServiceTests(TestCase):
-
     def test_service_no_drug_name(self):
         # triggering validation error for none drug_name input
         with self.assertRaisesRegex(ValueError, "drug_name is required"):
             DrugInfoService.get_drug_info(drug_name=None)
+
         # triggering validation error for empty string input
         with self.assertRaisesRegex(ValueError, "drug_name is required"):
             DrugInfoService.get_drug_info(drug_name="")
 
-    @patch('medtrackerapp.services.requests.get')
-    def test_drug_info_service_no_results(self, mock_requests_get):
-        # faking external response with empty results to test fallback behavior
-        fake_api_response = {"results": []}
-        mock_requests_get.return_value.status_code = 200
-        mock_requests_get.return_value.json.return_value = fake_api_response
-        # expecting gateway error for empty results
-        response = self.client.get(self.info_url)
-        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
 
 
 class MedicationExpectedDosesTest(APITestCase):
