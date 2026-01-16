@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Medication, DoseLog, Note
 
+
 class MedicationSerializer(serializers.ModelSerializer):
     adherence = serializers.SerializerMethodField()
 
@@ -17,8 +18,9 @@ class DoseLogSerializer(serializers.ModelSerializer):
         model = DoseLog
         fields = ["id", "medication", "taken_at", "was_taken"]
 
+
 class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
-        fields = ['id', 'medication', 'text', 'created_at']
-        read_only_fields = ['created_at']
+        fields = ["id", "medication", "text", "created_at"]
+        read_only_fields = ["created_at"]

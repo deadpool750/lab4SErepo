@@ -12,7 +12,9 @@ from django.test import TestCase
 class MedicationViewTests(APITestCase):
     def setUp(self):
         # initializing base medication instance for reuse in multiple test cases
-        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        self.med = Medication.objects.create(
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
+        )
         # storing list endpoint url for medication retrieval
         self.list_url = reverse("medication-list")
         # storing detail endpoint url for specific medication operations
@@ -30,11 +32,7 @@ class MedicationViewTests(APITestCase):
 
     def test_create_medication_valid(self):
         # preparing valid medication payload for post request
-        data = {
-            "name": "Paracetamol",
-            "dosage_mg": 500,
-            "prescribed_per_day": 3
-        }
+        data = {"name": "Paracetamol", "dosage_mg": 500, "prescribed_per_day": 3}
         # sending post request to create medication
         response = self.client.post(self.list_url, data)
         # verifying creation success
@@ -72,11 +70,7 @@ class MedicationViewTests(APITestCase):
 
     def test_update_medication_valid(self):
         # payload for updating an existing medication
-        data = {
-            "name": "Aspirin Updated",
-            "dosage_mg": 150,
-            "prescribed_per_day": 2
-        }
+        data = {"name": "Aspirin Updated", "dosage_mg": 150, "prescribed_per_day": 2}
         # sending put request
         response = self.client.put(self.detail_url, data)
         # checking update success
@@ -100,16 +94,15 @@ class MedicationViewTests(APITestCase):
 class DoseLogViewTests(APITestCase):
     def setUp(self):
         # setting up base medication for log associations
-        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        self.med = Medication.objects.create(
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
+        )
         # referencing log list endpoint
         self.log_list_url = reverse("doselog-list")
 
     def test_create_log_valid(self):
         # providing valid payload for dose log creation
-        data = {
-            "medication": self.med.pk,
-            "taken_at": timezone.now()
-        }
+        data = {"medication": self.med.pk, "taken_at": timezone.now()}
         # sending post request to create log
         response = self.client.post(self.log_list_url, data)
         # confirming successful creation
@@ -142,7 +135,9 @@ class DoseLogViewTests(APITestCase):
 class DoseLogFilterViewTests(APITestCase):
     def setUp(self):
         # initializing medication for testing filter operations
-        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        self.med = Medication.objects.create(
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
+        )
         # referencing logs list endpoint
         self.log_list_url = reverse("doselog-list")
         # defining custom filter endpoint path
@@ -150,10 +145,7 @@ class DoseLogFilterViewTests(APITestCase):
 
     def test_create_log_valid(self):
         # valid payload for creating a log entry
-        data = {
-            "medication": self.med.pk,
-            "taken_at": timezone.now()
-        }
+        data = {"medication": self.med.pk, "taken_at": timezone.now()}
         # performing post request
         response = self.client.post(self.log_list_url, data)
         # validating correct creation
@@ -188,18 +180,19 @@ class DoseLogFilterViewTests(APITestCase):
         yesterday = today - timedelta(days=1)
         tomorrow = today + timedelta(days=1)
         # converting dates to timezone-aware datetimes
-        yesterday_time = timezone.make_aware(datetime.combine(yesterday, datetime.min.time()))
+        yesterday_time = timezone.make_aware(
+            datetime.combine(yesterday, datetime.min.time())
+        )
         today_time = timezone.make_aware(datetime.combine(today, datetime.min.time()))
-        tomorrow_time = timezone.make_aware(datetime.combine(tomorrow, datetime.min.time()))
+        tomorrow_time = timezone.make_aware(
+            datetime.combine(tomorrow, datetime.min.time())
+        )
         # creating dose logs for testing filter accuracy
         DoseLog.objects.create(medication=self.med, taken_at=yesterday_time)
         DoseLog.objects.create(medication=self.med, taken_at=today_time)
         DoseLog.objects.create(medication=self.med, taken_at=tomorrow_time)
         # preparing date range parameters
-        params = {
-            'start': yesterday.isoformat(),
-            'end': today.isoformat()
-        }
+        params = {"start": yesterday.isoformat(), "end": today.isoformat()}
         # issuing get request with filtering parameters
         response = self.client.get(self.log_filter_url, params)
         # checking successful filtering
@@ -210,8 +203,8 @@ class DoseLogFilterViewTests(APITestCase):
     def test_filter_logs_invalid_params(self):
         # using invalid end date format to test failure case
         params = {
-            'start': timezone.now().date().isoformat(),
-            'end': "this-is-not-a-date"
+            "start": timezone.now().date().isoformat(),
+            "end": "this-is-not-a-date",
         }
         # sending request with invalid parameters
         response = self.client.get(self.log_filter_url, params)
@@ -220,14 +213,15 @@ class DoseLogFilterViewTests(APITestCase):
 
 
 class DrugInfoServiceTests(APITestCase):
-
     def setUp(self):
         # creating base medication for info retrieval tests
-        self.med = Medication.objects.create(name="Aspirin", dosage_mg=100, prescribed_per_day=2)
+        self.med = Medication.objects.create(
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
+        )
         # storing endpoint for drug info lookup
         self.info_url = f"/api/medications/{self.med.pk}/info/"
 
-    @patch('medtrackerapp.services.requests.get')
+    @patch("medtrackerapp.services.requests.get")
     def test_drug_info_service_mocked(self, mock_requests_get):
         # setting up mocked external api response for controlled test conditions
         fake_api_response = {
@@ -235,10 +229,10 @@ class DrugInfoServiceTests(APITestCase):
                 {
                     "openfda": {
                         "generic_name": ["Aspirin"],
-                        "manufacturer_name": ["Bayer"]
+                        "manufacturer_name": ["Bayer"],
                     },
                     "warnings": ["Test warning"],
-                    "purpose": ["Test purpose"]
+                    "purpose": ["Test purpose"],
                 }
             ]
         }
@@ -250,12 +244,12 @@ class DrugInfoServiceTests(APITestCase):
         # validating proper handling and response data extraction
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         mock_requests_get.assert_called_once()
-        self.assertEqual(response.data['manufacturer'], "Bayer")
-        self.assertEqual(response.data['warnings'], ["Test warning"])
-        self.assertEqual(response.data['purpose'], ["Test purpose"])
-        self.assertEqual(response.data['name'], "Aspirin")
+        self.assertEqual(response.data["manufacturer"], "Bayer")
+        self.assertEqual(response.data["warnings"], ["Test warning"])
+        self.assertEqual(response.data["purpose"], ["Test purpose"])
+        self.assertEqual(response.data["name"], "Aspirin")
 
-    @patch('medtrackerapp.services.requests.get')
+    @patch("medtrackerapp.services.requests.get")
     def test_drug_info_service_api_error(self, mock_requests_get):
         # simulating api failure with non-200 status
         mock_requests_get.return_value.status_code = 404
@@ -265,7 +259,7 @@ class DrugInfoServiceTests(APITestCase):
         # validating returned status for upstream error
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
 
-    @patch('medtrackerapp.services.requests.get')
+    @patch("medtrackerapp.services.requests.get")
     def test_drug_info_service_no_results(self, mock_requests_get):
         # faking api returning empty results list
         fake_api_response = {"results": []}
@@ -288,26 +282,23 @@ class DirectServiceTests(TestCase):
             DrugInfoService.get_drug_info(drug_name="")
 
 
-
 class MedicationExpectedDosesTest(APITestCase):
     def setUp(self):
         # creating a sample medication for testing using your model's fields
         self.medication = Medication.objects.create(
-            name="Test Med",
-            dosage_mg=10,
-            prescribed_per_day=2
+            name="Test Med", dosage_mg=10, prescribed_per_day=2
         )
-        self.url = reverse('medication-expected-doses', args=[self.medication.id])
+        self.url = reverse("medication-expected-doses", args=[self.medication.id])
 
     def test_expected_doses_valid(self):
         """Test legitimate request returns 200 and correct calculation"""
         # request with ?days=10
-        response = self.client.get(self.url, {'days': 10})
+        response = self.client.get(self.url, {"days": 10})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['medication_id'], self.medication.id)
-        self.assertEqual(response.data['days'], 10)
-        self.assertIn('expected_doses', response.data)
+        self.assertEqual(response.data["medication_id"], self.medication.id)
+        self.assertEqual(response.data["days"], 10)
+        self.assertIn("expected_doses", response.data)
 
     def test_expected_doses_missing_param(self):
         """Test missing 'days' parameter returns 400"""
@@ -316,7 +307,7 @@ class MedicationExpectedDosesTest(APITestCase):
 
     def test_expected_doses_invalid_param(self):
         """Test invalid 'days' (negative or string) returns 400"""
-        response = self.client.get(self.url, {'days': -5})
+        response = self.client.get(self.url, {"days": -5})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        response = self.client.get(self.url, {'days': "invalid"})
+        response = self.client.get(self.url, {"days": "invalid"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

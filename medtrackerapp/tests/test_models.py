@@ -7,13 +7,10 @@ from django.db.utils import IntegrityError
 
 
 class MedicationModelTests(TestCase):
-
     def setUp(self):
         """Set up a standard medication for use in tests."""
         self.med = Medication.objects.create(
-            name="Aspirin",
-            dosage_mg=100,
-            prescribed_per_day=2
+            name="Aspirin", dosage_mg=100, prescribed_per_day=2
         )
 
     def test_str_returns_name_and_dosage(self):
@@ -23,9 +20,7 @@ class MedicationModelTests(TestCase):
     def test_medication_positive_creation(self):
         """Test that a medication can be created with valid data."""
         med = Medication.objects.create(
-            name="Paracetamol",
-            dosage_mg=500,
-            prescribed_per_day=3
+            name="Paracetamol", dosage_mg=500, prescribed_per_day=3
         )
         self.assertEqual(med.name, "Paracetamol")
         self.assertEqual(med.dosage_mg, 500)
@@ -34,21 +29,15 @@ class MedicationModelTests(TestCase):
         """Test creating a medication with invalid negative dosage."""
         with self.assertRaises((ValidationError, IntegrityError)):
             med = Medication.objects.create(
-                name="BadIbuprofen",
-                dosage_mg=-400,
-                prescribed_per_day=3
+                name="BadIbuprofen", dosage_mg=-400, prescribed_per_day=3
             )
             med.full_clean()
 
     def test_medication_missing_name(self):
         """Test creating a medication with no name."""
         with self.assertRaises((ValidationError, IntegrityError)):
-            med = Medication.objects.create(
-                dosage_mg=200,
-                prescribed_per_day=1
-            )
+            med = Medication.objects.create(dosage_mg=200, prescribed_per_day=1)
             med.full_clean()
-
 
     def test_adherence_rate_no_logs(self):
         """
@@ -62,8 +51,12 @@ class MedicationModelTests(TestCase):
         """
         now = timezone.now()
         DoseLog.objects.create(medication=self.med, taken_at=now, was_taken=True)
-        DoseLog.objects.create(medication=self.med, taken_at=now - timedelta(days=1), was_taken=False)
-        DoseLog.objects.create(medication=self.med, taken_at=now - timedelta(days=2), was_taken=True)
+        DoseLog.objects.create(
+            medication=self.med, taken_at=now - timedelta(days=1), was_taken=False
+        )
+        DoseLog.objects.create(
+            medication=self.med, taken_at=now - timedelta(days=2), was_taken=True
+        )
 
         self.assertEqual(self.med.adherence_rate(), 66.67)
 
@@ -85,7 +78,9 @@ class MedicationModelTests(TestCase):
         """
         Test expected_doses method (line 53) for zero schedule.
         """
-        med_zero = Medication.objects.create(name="Placebo", dosage_mg=0, prescribed_per_day=0)
+        med_zero = Medication.objects.create(
+            name="Placebo", dosage_mg=0, prescribed_per_day=0
+        )
         with self.assertRaisesRegex(ValueError, "Days and schedule must be positive"):
             med_zero.expected_doses(days=10)
 
@@ -95,7 +90,9 @@ class MedicationModelTests(TestCase):
         """
         today = date.today()
         yesterday = today - timedelta(days=1)
-        with self.assertRaisesRegex(ValueError, "start_date must be before or equal to end_date"):
+        with self.assertRaisesRegex(
+            ValueError, "start_date must be before or equal to end_date"
+        ):
             self.med.adherence_rate_over_period(start_date=today, end_date=yesterday)
 
     def test_adherence_rate_over_period_calculation(self):
@@ -107,13 +104,19 @@ class MedicationModelTests(TestCase):
 
         # Create logs: one in range, one out of range
         now = timezone.now()
-        DoseLog.objects.create(medication=self.med, taken_at=now, was_taken=True)  # In range
-        DoseLog.objects.create(medication=self.med, taken_at=now - timedelta(days=2), was_taken=True)  # Out of range
+        DoseLog.objects.create(
+            medication=self.med, taken_at=now, was_taken=True
+        )  # In range
+        DoseLog.objects.create(
+            medication=self.med, taken_at=now - timedelta(days=2), was_taken=True
+        )  # Out of range
 
         # Period is 2 days (yesterday, today). Expected = 2 * 2 = 4 doses
         # Taken = 1 (the one from 'now')
         # Adherence = (1 / 4) * 100 = 25.0
-        adherence = self.med.adherence_rate_over_period(start_date=yesterday, end_date=today)
+        adherence = self.med.adherence_rate_over_period(
+            start_date=yesterday, end_date=today
+        )
         self.assertEqual(adherence, 25.0)
 
     def test_fetch_external_info_exception(self):
@@ -124,29 +127,25 @@ class MedicationModelTests(TestCase):
         with a medication that will fail in the service (e.g., empty name).
         """
         # This medication has an empty name, which the service will reject
-        med_invalid = Medication.objects.create(name="", dosage_mg=0, prescribed_per_day=1)
+        med_invalid = Medication.objects.create(
+            name="", dosage_mg=0, prescribed_per_day=1
+        )
         result = med_invalid.fetch_external_info()
         self.assertIn("error", result)
         self.assertEqual(result["error"], "drug_name is required")
 
 
 class TestDoseLog(TestCase):
-
     def setUp(self):
         """Set up a medication for DoseLog tests."""
         self.med = Medication.objects.create(
-            name="Paracetamol",
-            dosage_mg=500,
-            prescribed_per_day=3
+            name="Paracetamol", dosage_mg=500, prescribed_per_day=3
         )
 
     def test_log_dose_positive(self):
         """Test a positive path: logging a dose."""
         log_time = timezone.now()
-        log = DoseLog.objects.create(
-            medication=self.med,
-            taken_at=log_time
-        )
+        log = DoseLog.objects.create(medication=self.med, taken_at=log_time)
         self.assertEqual(log.medication, self.med)
         self.assertEqual(log.taken_at, log_time)
         self.assertTrue(log.was_taken)  # Check default value
@@ -154,9 +153,7 @@ class TestDoseLog(TestCase):
     def test_log_dose_missing_medication(self):
         """Test a negative path: creating a log without medication."""
         with self.assertRaises((ValidationError, IntegrityError)):
-            log = DoseLog.objects.create(
-                taken_at=timezone.now()
-            )
+            log = DoseLog.objects.create(taken_at=timezone.now())
             log.full_clean()
 
     # --- New Tests for Code Coverage ---
@@ -167,9 +164,7 @@ class TestDoseLog(TestCase):
         """
         log_time = timezone.make_aware(datetime(2025, 1, 1, 9, 30))
         log = DoseLog.objects.create(
-            medication=self.med,
-            taken_at=log_time,
-            was_taken=True
+            medication=self.med, taken_at=log_time, was_taken=True
         )
         # so we check for the components.
         expected_str = "Paracetamol at 2025-01-01 09:30 - Taken"
@@ -181,9 +176,7 @@ class TestDoseLog(TestCase):
         """
         log_time = timezone.make_aware(datetime(2025, 1, 2, 12, 0))
         log = DoseLog.objects.create(
-            medication=self.med,
-            taken_at=log_time,
-            was_taken=False
+            medication=self.med, taken_at=log_time, was_taken=False
         )
         expected_str = "Paracetamol at 2025-01-02 12:00 - Missed"
         self.assertEqual(str(log), expected_str)

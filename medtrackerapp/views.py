@@ -6,6 +6,7 @@ from .models import Medication, DoseLog, Note
 from .serializers import MedicationSerializer, DoseLogSerializer, NoteSerializer
 from rest_framework.filters import SearchFilter
 
+
 class MedicationViewSet(viewsets.ModelViewSet):
     """
     API endpoint for viewing and managing medications.
@@ -22,6 +23,7 @@ class MedicationViewSet(viewsets.ModelViewSet):
         - DELETE /medications/{id}/ — delete a medication
         - GET /medications/{id}/info/ — fetch external drug info from OpenFDA
     """
+
     queryset = Medication.objects.all()
     serializer_class = MedicationSerializer
 
@@ -52,7 +54,7 @@ class MedicationViewSet(viewsets.ModelViewSet):
             return Response(data, status=status.HTTP_502_BAD_GATEWAY)
         return Response(data)
 
-    @action(detail=True, methods=['get'], url_path='expected-doses')
+    @action(detail=True, methods=["get"], url_path="expected-doses")
     def expected_doses(self, request, pk=None):
         """
         Calculate the total number of doses required for a specific duration.
@@ -65,13 +67,13 @@ class MedicationViewSet(viewsets.ModelViewSet):
             400 Bad Request: If 'days' is missing, not an integer, or non-positive.
         """
         medication = self.get_object()
-        days_param = request.query_params.get('days')
+        days_param = request.query_params.get("days")
 
         # Check for presence first
         if not days_param:
             return Response(
                 {"error": "The 'days' query parameter is required."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -82,14 +84,18 @@ class MedicationViewSet(viewsets.ModelViewSet):
         except (ValueError, TypeError):
             return Response(
                 {"error": "The 'days' parameter must be a positive integer."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response({
-            "medication_id": medication.id,
-            "days": days,
-            "expected_doses": total_doses
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "medication_id": medication.id,
+                "days": days,
+                "expected_doses": total_doses,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class DoseLogViewSet(viewsets.ModelViewSet):
     """
@@ -108,6 +114,7 @@ class DoseLogViewSet(viewsets.ModelViewSet):
         - GET /logs/filter/?start=YYYY-MM-DD&end=YYYY-MM-DD —
           filter logs within a date range
     """
+
     queryset = DoseLog.objects.all()
     serializer_class = DoseLogSerializer
 
@@ -133,14 +140,17 @@ class DoseLogViewSet(viewsets.ModelViewSet):
 
         if not start or not end:
             return Response(
-                {"error": "Both 'start' and 'end' query parameters are required and must be valid dates."},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Both 'start' and 'end' query parameters are required and must be valid dates."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        logs = self.get_queryset().filter(
-            taken_at__date__gte=start,
-            taken_at__date__lte=end
-        ).order_by("taken_at")
+        logs = (
+            self.get_queryset()
+            .filter(taken_at__date__gte=start, taken_at__date__lte=end)
+            .order_by("taken_at")
+        )
 
         serializer = self.get_serializer(logs, many=True)
         return Response(serializer.data)
@@ -153,6 +163,7 @@ class NoteViewSet(viewsets.ModelViewSet):
     Provides standard CRUD operations but strictly forbids updates
     to ensure the historical integrity of medical notes.
     """
+
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
@@ -171,6 +182,5 @@ class NoteViewSet(viewsets.ModelViewSet):
         """Helper method to return a standard 405 error for update attempts."""
         return Response(
             {"error": "Updates to doctor's notes are not supported."},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
-
